@@ -1,116 +1,124 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useState } from "react";
+import DeleteData from "./DeleteData";
 
 const Generator = () => {
-  const [inputType, setInputType] = useState([]);
+    const [id, setId] = useState(1);
+    const [inputType, setInputType] = useState([]);
 
-  const [id, setId] = useState(1);
+    const [inputChange, setInputChange] = useState({});
+    const [success, setSuccess] = useState(false);
+    const [dbData, setDbData] = useState();
+    const [apiURl, setApiURl] = useState("");
 
-  const handleSelect = (e) => {
-    e.preventDefault();
-    const type = e.target[0].value;
-    setId(id + 1);
-    const typeofObject = {
-      type,
-      id,
+    localStorage.setItem("previous-Item", JSON.stringify(inputType));
+
+    const handleSelect = (e) => {
+        e.preventDefault();
+        const type = e.target[0].value || e.target[1].value;
+        setId(id + 1);
+        const typeofObject = {
+            type,
+            id,
+        };
+        setInputType([...inputType, typeofObject]);
+        e.target.reset();
     };
-    setInputType([...inputType, typeofObject]);
-  };
 
-  return (
-    <div className=" p-2 grid ">
-      <div></div>
-      <div className="grid justify-center">
-        <form action="" onSubmit={handleSelect}>
-          <label htmlFor="name" className="text-blue-500 text-xl font-bold">
-            Input type :{" "}
-          </label>
-          <select className="px-4 py-2 my-4 text-xl rounded-md mr-5">
-            <option value="text">text</option>
-            <option value="password">password</option>
-            <option value="url">Url</option>
-            <option value="message">Message</option>
-            <option value="date">Date</option>
-            <option value="number">Number</option>
-            <option value="tel">telephone</option>
-            <option value="email">Email</option>
-          </select>
-          <button className="px-4 py-2  font-extrabold rounded text-white  hover:bg-black transition-colors bg-yellow-400">
-            Add
-          </button>
-        </form>
-        <form
-          action=""
-          className="bg-blue-500 grid mt-12 mr-10 px-12 rounded-xl"
-        >
-          {inputType.map((arr) => (
-            <div key={arr.id}>
-              <label
-                htmlFor="name"
-                className="text-white text-xl font-bold float-left mt-7"
-              >
-                {arr.type} :{" "}
-              </label>
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        const previousItems = JSON.parse(localStorage.getItem("previous-Item"));
+        setInputType(previousItems);
 
-              <input
-                type={arr.type}
-                name={arr.type}
-                placeholder={arr.type}
-                className="p-2 border border-blue-400  rounded-xl pl-3 m-5 float-right"
-              />
+        fetch(`${process.env.REACT_APP_SERVER_LINK}/userData`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(inputChange),
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.acknowledged) {
+                    alert("api added successfully");
+                    e.target.reset();
+                    setSuccess(!success);
+                } else {
+                    alert("api not successfully added");
+                    console.log("post method", data);
+                }
+            })
+            .catch((err) => console.log(err));
+    };
+
+    useEffect(() => {
+        fetch(`${process.env.REACT_APP_SERVER_LINK}/userData`)
+            .then((res) => res.json())
+            .then((data) => {
+                setDbData(data.data);
+                setApiURl(data.serverUrl);
+            });
+    }, [success]);
+
+    const handleChange = (e) => {
+        const name = e.target.name;
+        const value = e.target.value;
+        const obj = { ...inputChange };
+        obj[name] = value;
+        setInputChange(obj);
+    };
+
+    return (
+        <div className=' p-2 grid '>
+            <div className='grid justify-center'>
+                <form action='' onSubmit={handleSelect}>
+                    <label htmlFor='name' className='text-[#F4A896] text-xl font-bold'>
+                        Name Type :{" "}
+                    </label>
+                    <input type='text' name='text' placeholder='Enter a Name' className='p-2 border border-blue-400  rounded-xl pl-3 m-5 ' />
+                    <select name='' id='' className='py-4 px-4 rounded-xl'>
+                        <option value='email'>Email</option>
+                        <option value='password'>Password</option>
+                        <option value='text'>Text</option>
+                        <option value='number'>Number</option>
+                    </select>
+                    <button className='btn bg-[#F4A896] btn-ghost text-white mx-4'>Add</button>
+                </form>
+
+                <form onSubmit={handleSubmit} action='' className='bg-[#F4A896]  grid mt-12 mr-10 px-12 rounded-xl'>
+                    {inputType?.map((arr) => (
+                        <div key={arr.id}>
+                            <label htmlFor='name' className=' text-[#358597] text-xl font-bold float-left mt-7'>
+                                {arr.type.toUpperCase()} :{" "}
+                            </label>
+
+                            <input
+                                onChange={(e) => handleChange(e)}
+                                type={arr.type}
+                                name={arr.type}
+                                required
+                                placeholder={arr.type}
+                                className='p-2 border border-[#358597]  rounded-xl pl-3 m-5 float-right'
+                            />
+                        </div>
+                    ))}
+                    <button className='my-5 btn bg-[#358597]  btn-ghost text-white '>Create Data</button>
+                </form>
             </div>
-          ))}
-          <button className="px-4 py-2 my-5 font-extrabold rounded-xl text-white  hover:bg-black transition-colors bg-yellow-400">
-            Create Data
-          </button>
-        </form>
-      </div>
-    </div>
-  );
+            <div className=' text-center mt-12'>
+                {apiURl ? (
+                    <p className='text-blue-400 '>
+                        <span className='text-3xl text-[#358597] font-bold mr-5'>Your api link is :-</span>{" "}
+                        <a href={apiURl} target='_blank' className='link link-hover text-2xl'>
+                            {apiURl}
+                        </a>
+                    </p>
+                ) : (
+                    ""
+                )}
+            </div>
+
+            <DeleteData></DeleteData>
+        </div>
+    );gi
 };
 
 export default Generator;
-
-//  const [inputArrBtn, setInputArrBtn] = useState(1);
-//  if (inputArrBtn === 0 || inputArrBtn < 1) {
-//    setInputArrBtn(1);
-//  }
-
-//  let arrayInput = [...Array(inputArrBtn).keys()];
-
-//  <div className="">
-//    <button
-//      onClick={() => setInputArrBtn(inputArrBtn + 1)}
-//      className="px-4 py-2 mr-3 text-3xl font-extrabold rounded text-white transition  hover:bg-blue-500  transition-colors bg-yellow-400"
-//    >
-//      {" "}
-//      +{" "}
-//    </button>
-//    <button
-//      onClick={() => setInputArrBtn(inputArrBtn - 1)}
-//      className={`px-5 ml-4 py-2 text-3xl font-extrabold rounded ${
-//        inputArrBtn === 1
-//          ? `bg-slate-300 text-black`
-//          : " text-white transition  hover:bg-blue-500   bg-yellow-400"
-//      }`}
-//    >
-//      {" "}
-//      -{" "}
-//    </button>
-//  </div>;
-
-// <form action="" className="bg-blue-500 w-[500px] mx-auto px-12 rounded-xl">
-//   {arrayInput.map((arr) => (
-//     <div key={arr}>
-//       <label htmlFor="name" className="text-white text-xl font-bold">
-//         "Name":{" "}
-//       </label>
-//       <input
-//         type="text"
-//         name="name"
-//         placeholder="Name"
-//         className="p-2 border border-blue-400  rounded-xl pl-3 m-5"
-//       />
-//     </div>
-//   ))}
-// </form>;
